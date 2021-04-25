@@ -1,0 +1,46 @@
+package main
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"log"
+)
+
+func main() {
+	db, err := sql.Open("mysql",
+		"root:@zhou20000301@tcp(cdb-pml0f4b1.gz.tencentcdb.com:10028)/学习使用")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	row, err := getById(db, 9)
+	if errors.Is(err,sql.ErrNoRows){
+		fmt.Printf("main:%+v\n",err)
+	}
+	for _,i := range row{
+		fmt.Print(i,"-")
+	}
+
+}
+
+func getById(db *sql.DB, id int)([]string,error)  {
+	var (
+		userId   string
+		userName string
+		price string
+		year string
+	)
+	err := db.QueryRow("select user_id,user_name,price,the_year from t_order where id = ?", id).Scan(&userId,&userName,&price,&year)
+	if err != nil{
+		if errors.Is(err,sql.ErrNoRows){
+			return nil, fmt.Errorf("getById:%w", err)
+		}else {
+			log.Fatal(err)
+		}
+	}
+	var row []string
+	row = append(row,userId,userName,price,year)
+	return row,nil
+}
