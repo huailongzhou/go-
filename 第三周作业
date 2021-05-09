@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func main() {
+	var stop = make(chan struct{})
+	g, ctx := errgroup.WithContext(context.Background())
+	mux :=http.NewServeMux()
+	mux.HandleFunc("/Hello", func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte("Hello world!"))
+	})
+	mux.HandleFunc("/shutdown", func(writer http.ResponseWriter, request *http.Request) {
+		stop <- struct{}{}
+	})
+
+	service := http.Server{
+		Handler: mux,
+		Addr: "localhost:8080",
+	}
+	g.Go(func() error {
+		return service.ListenAndServe()
+	})
+
+	g.Go(func() error {
+		select {
+		case <- ctx.Done():
+			return ctx.Err()
+		case <- stop:
+			return service.Shutdown(context.Background())
+		}
+	})
+
+	g.Go(func() error {
+		quit := make(chan os.Signal, 0)
+		signal.Notify(quit,syscall.SIGINT, syscall.SIGTERM)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case sig:= <-quit:
+			stop <- struct{}{}
+			return errors.Errorf("get os signal: ", sig)
+		}
+	})
+	fmt.Printf("errgroup exiting:%v\n", g.Wait())
+}
+
