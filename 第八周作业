@@ -1,0 +1,35 @@
+1：大小    set(requests per second)    get(requests per second)
+  10          65487.89                    71326.68
+  20          68166.33                    66979.23
+  50          70224.72                    69930.07
+  100         70571.62                    71581.96
+  200         70077.09                    71581.96
+  1k          59772.86                    71225.07
+  5k          65146.58                    66357.00
+  
+  
+  
+  2
+import redis
+import random
+
+
+if __name__ == "__main__":
+    redis_conn = redis.Redis(host='127.0.0.1', port=6379, db=0)
+    list1 = []
+    for j in range(6):
+        m = ''
+        size = random.randint(10000, 500000)
+        for i in range(size):
+            m += 'w'
+        redis_conn.set(f"name{j}", m)
+  
+  随机写入1w到50w的value 6个，
+分析结果有
+key       size_in_bytes
+name1       229424
+name0       458800
+name2       262192
+name3       229424
+name4       163888
+name5       524336
