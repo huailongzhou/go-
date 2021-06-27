@@ -1,0 +1,37 @@
+fix length： 使用长度固定的数据发送，一般适用于指令发送。譬如：数据发送端规定发送的数据都是双字节，AA 表示启动、BB 表示关闭等等
+delimiter based：这种方式是使用特殊字符作为数据的结束符，一般适用于简单数据的发送。譬如：在消息的结尾自动加上文本换行符（Windows使用\r\n，Linux使用\n）,接收方见到文本换行符就认为是一个完整的消息，结束接收数据开始解析
+length field based：定长报文头法：使用定长报文头，在报文头的某个域指明报文长度。比如https等协议，使用最广泛
+
+
+2：
+func decode(c net.Conn) []string{
+	const HeaderSize = 16
+	bytes2 := make([]byte, 4096*5)
+	totalLen := 0
+	var totalBytes []byte
+	strs := make([]string, 0)
+	for cnt, _:= c.Read(bytes2);cnt != 0;{
+		totalBytes = append(totalBytes, bytes2[0:cnt]...)
+		totalLen += cnt
+		for totalLen > HeaderSize {
+			lengthBytes := make([]byte, 4)
+			contentLen := bytes2Int(lengthBytes)
+			if totalLen < HeaderSize + contentLen{
+				break
+			}
+			strs = append(strs, string(totalBytes[HeaderSize:HeaderSize+ contentLen]))
+			totalLen -= HeaderSize + contentLen
+			leftBytes := make([]byte, totalLen)
+			copy(leftBytes, totalBytes[HeaderSize + contentLen:HeaderSize+contentLen+totalLen])
+			totalBytes = leftBytes
+		}
+	}
+	return strs
+}
+
+func bytes2Int(temp []byte) int{
+	bBuf := bytes.NewBuffer(temp)
+	var x int
+	_ = binary.Read(bBuf, binary.BigEndian, &x)
+	return x
+}
