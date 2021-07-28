@@ -6,6 +6,7 @@ length field based：定长报文头法：使用定长报文头，在报文头�
 2：
 func decode(c net.Conn) []string{
 	const HeaderSize = 16
+	var isHead = true
 	bytes2 := make([]byte, 4096*5)
 	totalLen := 0
 	var totalBytes []byte
@@ -14,8 +15,13 @@ func decode(c net.Conn) []string{
 		totalBytes = append(totalBytes, bytes2[0:cnt]...)
 		totalLen += cnt
 		for totalLen > HeaderSize {
-			lengthBytes := make([]byte, 4)
-			contentLen := bytes2Int(lengthBytes)
+			if isHead {
+				lengthBytes := make([]byte, 4)
+				copy(lengthBytes, totalBytes[12:16]
+				contentLen := bytes2Int(lengthBytes)
+				isHead = false
+			}
+			
 			if totalLen < HeaderSize + contentLen{
 				break
 			}
